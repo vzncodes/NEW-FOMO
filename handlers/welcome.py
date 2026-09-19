@@ -98,10 +98,14 @@ async def start_bot_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     code, display_text = captcha_service.generate_captcha()
     captcha_service.set_captcha(user_id, code)
     
-    await query.edit_message_text(
-        "🔐 <b>Verification Required</b>\n\n"
-        "Please enter the CAPTCHA code shown below to continue.\n\n"
-        f"{display_text}",
+    # Send new message (can't edit photo/video to text)
+    await context.bot.send_message(
+        chat_id=query.message.chat_id,
+        text=(
+            "🔐 <b>Verification Required</b>\n\n"
+            "Please enter the CAPTCHA code shown below to continue.\n\n"
+            f"{display_text}"
+        ),
         parse_mode="HTML",
         reply_markup=get_captcha_keyboard(code)
     )
