@@ -208,7 +208,18 @@ def main():
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_input))
     
     logger.info("Starting bot...")
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+    
+    # Python 3.14+ compatibility: run_polling uses deprecated get_event_loop
+    try:
+        application.run_polling(allowed_updates=Update.ALL_TYPES)
+    except RuntimeError as e:
+        if "no current event loop" in str(e):
+            # Create new event loop for Python 3.14+
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            application.run_polling(allowed_updates=Update.ALL_TYPES)
+        else:
+            raise
 
 
 if __name__ == "__main__":
