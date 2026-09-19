@@ -95,20 +95,14 @@ async def start_bot_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await show_main_menu(update, context)
         return
     
-    code, image_bytes = captcha_service.generate_captcha()
+    code, display_text = captcha_service.generate_captcha()
     captcha_service.set_captcha(user_id, code)
     
     await query.edit_message_text(
         "🔐 <b>Verification Required</b>\n\n"
-        "Please enter the CAPTCHA code shown in the image below to continue.\n\n"
-        f"<code>{code}</code>",
+        "Please enter the CAPTCHA code shown below to continue.\n\n"
+        f"{display_text}",
         parse_mode="HTML",
-        reply_markup=get_captcha_keyboard(code)
-    )
-    
-    await query.message.reply_photo(
-        photo=image_bytes,
-        caption="Enter the code above by tapping the buttons below",
         reply_markup=get_captcha_keyboard(code)
     )
 
@@ -121,20 +115,14 @@ async def captcha_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = query.data
     
     if data == "captcha_refresh":
-        code, image_bytes = captcha_service.generate_captcha()
+        code, display_text = captcha_service.generate_captcha()
         captcha_service.set_captcha(user_id, code)
         
         await query.edit_message_text(
             "🔐 <b>Verification Required</b>\n\n"
-            "Please enter the CAPTCHA code shown in the image below to continue.\n\n"
-            f"<code>{code}</code>",
+            "Please enter the CAPTCHA code shown below to continue.\n\n"
+            f"{display_text}",
             parse_mode="HTML",
-            reply_markup=get_captcha_keyboard(code)
-        )
-        
-        await query.message.reply_photo(
-            photo=image_bytes,
-            caption="Enter the code above by tapping the buttons below",
             reply_markup=get_captcha_keyboard(code)
         )
         return

@@ -1,56 +1,42 @@
 import random
 import string
-import asyncio
 from datetime import datetime, timedelta
-from typing import Optional, Tuple
-from PIL import Image, ImageDraw, ImageFont
-import io
-import base64
+from typing import Tuple
 from config.settings import config
 from models.database import db, User
+
 
 class CaptchaService:
     def __init__(self):
         self.captcha_length = config.CAPTCHA_LENGTH
         self.timeout = config.CAPTCHA_TIMEOUT
     
-    def generate_captcha(self) -> Tuple[str, bytes]:
+    def generate_captcha(self) -> Tuple[str, str]:
+        """Generate CAPTCHA code and return (code, display_text)"""
         code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=self.captcha_length))
         
-        width = 280
-        height = 100
-        image = Image.new('RGB', (width, height), color=(25, 25, 35))
-        draw = ImageDraw.Draw(image)
+        # Create a visual text representation using Unicode box drawing
+        display = self._create_text_display(code)
+        return code, display
+    
+    def _create_text_display(self, code: str) -> str:
+        """Create a text-based visual CAPTCHA"""
+        # Style 1: Boxed characters
+        top = "┌" + "─" * (len(code) * 4 - 1) + "┐"
+        middle = "│ " + " │ ".join(code) + " │"
+        bottom = "└" + "─" * (len(code) * 4 - 1) + "┘"
         
-        for _ in range(50):
-            x1 = random.randint(0, width)
-            y1 = random.randint(0, height)
-            x2 = random.randint(0, width)
-            y2 = random.randint(0, height)
-            draw.line([(x1, y1), (x2, y2)], fill=(random.randint(50, 100), random.randint(50, 100), random.randint(50, 100)), width=1)
+        # Add some noise characters
+        noise_chars = "░▒▓█▄▀▌▐▙▛▜▟▞▚▘▝▖▗"
+        noise_line = "".join(random.choices(noise_chars, k=len(code) * 2))
         
-        for _ in range(200):
-            x = random.randint(0, width)
-            y = random.randint(0, height)
-            draw.point((x, y), fill=(random.randint(80, 150), random.randint(80, 150), random.randint(80, 150)))
-        
-        try:
-            font = ImageFont.truetype("arial.ttf", 42)
-        except:
-            font = ImageFont.load_default()
-        
-        char_width = width // self.captcha_length
-        for i, char in enumerate(code):
-            x = i * char_width + char_width // 4
-            y = height // 4 + random.randint(-5, 5)
-            color = (random.randint(200, 255), random.randint(200, 255), random.randint(200, 255))
-            draw.text((x, y), char, font=font, fill=color)
-        
-        buffer = io.BytesIO()
-        image.save(buffer, format='PNG')
-        buffer.seek(0)
-        
-        return code, buffer.getvalue()
+        return (
+            f"<pre>{top}</pre>\n"
+            f"<pre>{middle}</pre>\n"
+            f"<pre>{bottom}</pre>\n\n"
+            f"<pre>{noise_line}</pre>\n\n"
+            f"Enter the <b>{self.captcha_length} characters</b> above by tapping buttons below."
+        )
     
     def set_captcha(self, user_id: int, code: str):
         user = db.get_user(user_id)
